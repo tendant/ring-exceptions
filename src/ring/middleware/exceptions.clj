@@ -3,7 +3,7 @@
 
 (defn server-exception-response [e req uuid]
   (let [uri (:uri req)]
-    (log/error e "uri:" (:uri req) "uuid:" uuid)
+    ;; (println e "uri:" (:uri req) "uuid:" uuid)
     {:status 500
      :body {:message "Unexpected server exception."
             :uri (:uri req)
@@ -47,7 +47,6 @@
          (let [uuid (str (java.util.UUID/randomUUID))]
            (when (and (= (type e) java.sql.SQLException)
                       (.getNextException e))
-             (log/error (.getNextException e) "Caught unexpected SQLException, next exception:" uuid)
-             )
+             (log/error (.getNextException e) "Caught unexpected SQLException, next exception:" uuid))
            (log/error e "Caught unexpected RuntimeException:" uuid)
            (server-exception-response e request uuid)))))))
