@@ -15,6 +15,9 @@
   [req]
   (throw (ex-info "Test graphql-errors" {:cause :graphql-errors})))
 
+(defn handler-unauthenticated-errors [req]
+  (throw (ex-info "unauthenticated" {:cause :unauthenticated})))
+
 (defn handler-sqlexception
   [req]
   (throw (java.sql.SQLException. "Test SQLException")))
@@ -47,6 +50,9 @@
       (let [handler (wrap-exceptions handler-malformed)
             response (handler {})]
         (is (= 400 (:status response))))
+      (let [handler (wrap-exceptions handler-unauthenticated-errors)
+            response (handler {})]
+        (is (= 401 (:status response))))
       (let [handler (wrap-exceptions handler-graphq-errors)
             response (handler {})]
         (is (= 200 (:status response)))
