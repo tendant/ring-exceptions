@@ -17,6 +17,14 @@
    :body {:message (.getMessage e)
           :error-id uuid}})
 
+(defn unauthenticated-exception-response
+  "Unauthenticated exception"
+  [e req uuid]
+  (log/error e "Unauthenticated: erorr uuid:" uuid)
+  {:status 401
+   :body {:message (.getMessage e)
+          :error-id uuid}})
+
 (defn graphql-exception-response
   [e req uuid]
   {:status (or (-> e ex-data :status)
@@ -26,7 +34,8 @@
                     :error-id uuid}]}})
 
 (def default-error-fns {:invalid-params malformed-exception-response
-                        :graphql-errors graphql-exception-response})
+                        :graphql-errors graphql-exception-response
+                        :unauthenticated unauthenticated-exception-response})
 
 (defn wrap-exceptions
   "Wrap unhandled exception"
