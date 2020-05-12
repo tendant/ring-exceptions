@@ -4,6 +4,7 @@
 (defn server-exception-response [e req uuid]
   (let [uri (:uri req)]
     ;; (println e "uri:" (:uri req) "uuid:" uuid)
+    (log/error e "Caught unexpected RuntimeException:" uuid)
     {:status 500
      :body {:message "Unexpected server exception."
             :uri (:uri req)
@@ -33,9 +34,16 @@
    :body {:errors [{:message (.getMessage e)
                     :error-id uuid}]}})
 
+(defn sql-exception-response
+  [e req uuid]
+  (log/error (.getNextException e) "Caught unexpected SQLException, next exception:" uuid)
+  (server-exception-response e req uuid))
+
 (def default-error-fns {:invalid-params malformed-exception-response
                         :graphql-errors graphql-exception-response
-                        :unauthenticated unauthenticated-exception-response})
+                        :unauthenticated unauthenticated-exception-response
+                        :sql-exception-response sql-exception-response
+                        :server-exception-response server-exception-response})
 
 (defn wrap-exceptions
   "Wrap unhandled exception"
@@ -43,19 +51,19 @@
    (wrap-exceptions handler {:error-fns default-error-fns}))
   ([handler options]
    (fn [request]
-     (try
-       (handler request)
-       (catch clojure.lang.ExceptionInfo e  ; Catch ExceptionInfo
-         (let [uuid (str (java.util.UUID/randomUUID))
-               cause (-> e ex-data :cause)
-               error-fns (:error-fns options)
-               error-fn (get error-fns cause server-exception-response)]
-           (log/error e "Caught preprocessed ExceptionInfo:" uuid)
-           (error-fn e request uuid)))
-       (catch Throwable e  ; Catch all other throwables
-         (let [uuid (str (java.util.UUID/randomUUID))]
-           (when (and (= (type e) java.sql.SQLException)
-                      (.getNextException e))
-             (log/error (.getNextException e) "Caught unexpected SQLException, next exception:" uuid))
-           (log/error e "Caught unexpected RuntimeException:" uuid)
-           (server-exception-response e request uuid)))))))
+     (let [error-fns (:error-fns options)]
+       (try
+         (handler request)
+         (catch clojure.lang.ExceptionInfo e  ; Catch ExceptionInfo
+           (let [uuid (str (java.util.UUID/randomUUID))
+                 cause (-> e ex-data :cause)
+                 error-fn (get error-fns cause server-exception-response)]
+             (log/error e "Caught preprocessed ExceptionInfo:" uuid)
+             (error-fn e request uuid)))
+         (catch Throwable e  ; Catch all other throwables
+           (let [uuid (str (java.util.UUID/randomUUID))
+                 sql-exception-response-fn (:sql-exception-response error-fns)
+                 server-exception-response-fn (:server-exception-response error-fns)]
+             (if (= (type e) java.sql.SQLException)
+               (sql-exception-response-fn e request uuid)
+               (server-exception-response-fn e request uuid)))))))))

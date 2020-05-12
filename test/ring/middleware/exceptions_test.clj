@@ -7,6 +7,10 @@
   [req]
   (throw (RuntimeException. "Test throwable")))
 
+(defn handler-sql-exception
+  [req]
+  (throw (java.sql.SQLException. (RuntimeExcpeiton. "Nested Error"))))
+
 (defn handler-malformed
   [req]
   (throw (ex-info "Test malformed" {:cause :invalid-params})))
@@ -56,4 +60,8 @@
       (let [handler (wrap-exceptions handler-graphq-errors)
             response (handler {})]
         (is (= 200 (:status response)))
-        (is (not (nil? (:errors (:body response)))))))))
+        (is (not (nil? (:errors (:body response))))))
+      (let [handler (wrap-exceptions handler-sqlexception)
+            response (handler {})]
+        (is (= 500 (:status response)))
+        (is (not (nil? (:error-id (:body response)))))))))
