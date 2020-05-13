@@ -48,10 +48,12 @@
 (defn wrap-exceptions
   "Wrap unhandled exception"
   ([handler]
-   (wrap-exceptions handler {:error-fns default-error-fns}))
+   (wrap-exceptions handler {:error-fns default-error-fns
+                             :pre-hook nil}))
   ([handler options]
    (fn [request]
-     (let [error-fns (:error-fns options)]
+     (let [error-fns (:error-fns options)
+           pre-hook (:pre-hook options)]
        (try
          (handler request)
          (catch clojure.lang.ExceptionInfo e  ; Catch ExceptionInfo
@@ -59,11 +61,15 @@
                  cause (-> e ex-data :cause)
                  error-fn (get error-fns cause server-exception-response)]
              (log/error e "Caught preprocessed ExceptionInfo:" uuid)
+             (if pre-hook
+               (pre-hook e request uuid))
              (error-fn e request uuid)))
          (catch Throwable e  ; Catch all other throwables
            (let [uuid (str (java.util.UUID/randomUUID))
                  sql-exception-response-fn (:sql-exception-response error-fns)
                  server-exception-response-fn (:server-exception-response error-fns)]
+             (if pre-hook
+               (pre-hook e request uuid))
              (if (= (type e) java.sql.SQLException)
                (sql-exception-response-fn e request uuid)
                (server-exception-response-fn e request uuid)))))))))
