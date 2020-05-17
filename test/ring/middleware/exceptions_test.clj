@@ -9,7 +9,7 @@
 
 (defn handler-sql-exception
   [req]
-  (throw (java.sql.SQLException. (RuntimeExcpeiton. "Nested Error"))))
+  (throw (java.sql.SQLException. (RuntimeException. "Nested Error"))))
 
 (defn handler-malformed
   [req]
@@ -65,3 +65,18 @@
             response (handler {})]
         (is (= 500 (:status response)))
         (is (not (nil? (:error-id (:body response)))))))))
+
+(defn customized-server-exception-response [e req uuid]
+  (let [uri (:uri req)]
+    {:status 600
+     :body {:message "Customized Message"}}))
+
+(deftest customized-handler-test
+  (testing "Customized exceptions"
+    (with-printing-suppressed
+      (let [handler (wrap-exceptions handler-throwable {:error-fns (assoc ring.middleware.exceptions/default-error-fns
+                                                                          :server-exception-response customized-server-exception-response)})
+            response (handler {})]
+        (println "response: " response)
+        (is (= 600 (:status response)))
+        (is (= "Customized Message" (:message (:body response))))))))
