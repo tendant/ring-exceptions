@@ -53,13 +53,14 @@
   ([handler options]
    (fn [request]
      (let [error-fns (:error-fns options)
+           server-exception-response-fn (:server-exception-response error-fns)
            pre-hook (:pre-hook options)]
        (try
          (handler request)
          (catch clojure.lang.ExceptionInfo e  ; Catch ExceptionInfo
            (let [uuid (str (java.util.UUID/randomUUID))
                  cause (-> e ex-data :cause)
-                 error-fn (get error-fns cause server-exception-response)]
+                 error-fn (get error-fns cause server-exception-response-fn)]
              (log/error e "Caught preprocessed ExceptionInfo:" uuid)
              (if pre-hook
                (pre-hook e request uuid))
