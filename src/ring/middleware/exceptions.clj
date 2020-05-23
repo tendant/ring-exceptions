@@ -60,9 +60,9 @@
      (let [error-fns (:error-fns options)
            server-exception-response-fn (:server-exception-response error-fns)
            pre-hook (:pre-hook options)
-           id-fn (:id-fn options)
-           id (or (id-fn request)
-                  default-id-fn)]
+           id-fn (or (:id-fn options)
+                     default-id-fn)
+           id (id-fn request)]
        (try
          (handler request)
          (catch clojure.lang.ExceptionInfo e  ; Catch ExceptionInfo
