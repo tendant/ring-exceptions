@@ -1,43 +1,43 @@
 (ns ring.middleware.exceptions
   (:require [clojure.tools.logging :as log]))
 
-(defn server-exception-response [e req uuid]
+(defn server-exception-response [e req id]
   (let [uri (:uri req)]
-    ;; (println e "uri:" (:uri req) "uuid:" uuid)
-    (log/error e "Caught unexpected RuntimeException:" uuid)
+    ;; (println e "uri:" (:uri req) "id:" id)
+    (log/error e "Caught unexpected RuntimeException:" id)
     {:status 500
      :body {:message "Unexpected server exception."
             :uri (:uri req)
-            :error-id uuid}}))
+            :error-id id}}))
 
 (defn malformed-exception-response
   "Malformed exception, mainly caused by malformed parameters in HTTP Request, this is client application error (bug), instead of user error."
-  [e req uuid]
-  (log/error e "malformed: erorr uuid:" uuid)
+  [e req id]
+  (log/error e "malformed: erorr id:" id)
   {:status 400
    :body {:message (.getMessage e)
-          :error-id uuid}})
+          :error-id id}})
 
 (defn unauthenticated-exception-response
   "Unauthenticated exception"
-  [e req uuid]
-  (log/error e "Unauthenticated: erorr uuid:" uuid)
+  [e req id]
+  (log/error e "Unauthenticated: erorr id:" id)
   {:status 401
    :body {:message (.getMessage e)
-          :error-id uuid}})
+          :error-id id}})
 
 (defn graphql-exception-response
-  [e req uuid]
+  [e req id]
   {:status (or (-> e ex-data :status)
                (-> e ex-data :http-status)
                200)
    :body {:errors [{:message (.getMessage e)
-                    :error-id uuid}]}})
+                    :error-id id}]}})
 
 (defn sql-exception-response
-  [e req uuid]
-  (log/error (.getNextException e) "Caught unexpected SQLException, next exception:" uuid)
-  (server-exception-response e req uuid))
+  [e req id]
+  (log/error (.getNextException e) "Caught unexpected SQLException, next exception:" id)
+  (server-exception-response e req id))
 
 (def default-error-fns {:invalid-params malformed-exception-response
                         :graphql-errors graphql-exception-response
@@ -49,28 +49,30 @@
   "Wrap unhandled exception"
   ([handler]
    (wrap-exceptions handler {:error-fns default-error-fns
-                             :pre-hook nil}))
+                             :pre-hook nil
+                             :id-fn (fn [req]
+                                      (str (java.util.UUID/randomUUID)))}))
   ([handler options]
    (fn [request]
      (let [error-fns (:error-fns options)
            server-exception-response-fn (:server-exception-response error-fns)
-           pre-hook (:pre-hook options)]
+           pre-hook (:pre-hook options)
+           id-fn (:id-fn options)
+           id (id-fn request)]
        (try
          (handler request)
          (catch clojure.lang.ExceptionInfo e  ; Catch ExceptionInfo
-           (let [uuid (str (java.util.UUID/randomUUID))
-                 cause (-> e ex-data :cause)
+           (let [cause (-> e ex-data :cause)
                  error-fn (get error-fns cause server-exception-response-fn)]
-             (log/error e "Caught preprocessed ExceptionInfo:" uuid)
+             (log/error e "Caught preprocessed ExceptionInfo:" id)
              (if pre-hook
-               (pre-hook e request uuid))
-             (error-fn e request uuid)))
+               (pre-hook e request id))
+             (error-fn e request id)))
          (catch Throwable e  ; Catch all other throwables
-           (let [uuid (str (java.util.UUID/randomUUID))
-                 sql-exception-response-fn (:sql-exception-response error-fns)
+           (let [sql-exception-response-fn (:sql-exception-response error-fns)
                  server-exception-response-fn (:server-exception-response error-fns)]
              (if pre-hook
-               (pre-hook e request uuid))
+               (pre-hook e request id))
              (if (= (type e) java.sql.SQLException)
-               (sql-exception-response-fn e request uuid)
-               (server-exception-response-fn e request uuid)))))))))
+               (sql-exception-response-fn e request id)
+               (server-exception-response-fn e request id)))))))))
