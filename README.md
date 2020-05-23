@@ -1,10 +1,10 @@
 # ring-exceptions
 
-A Clojure library designed to ... well, that part is up to you.
+A Clojure Ring middle to handle exceptions
 
 ## Usage
 
-FIXME
+```[tendant/ring-exceptions "0.1.6"]```
 
 ## License
 
