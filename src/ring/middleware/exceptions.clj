@@ -45,20 +45,24 @@
                         :sql-exception-response sql-exception-response
                         :server-exception-response server-exception-response})
 
+(defn default-id-fn
+  [req]
+  (str (java.util.UUID/randomUUID)))
+
 (defn wrap-exceptions
   "Wrap unhandled exception"
   ([handler]
    (wrap-exceptions handler {:error-fns default-error-fns
                              :pre-hook nil
-                             :id-fn (fn [req]
-                                      (str (java.util.UUID/randomUUID)))}))
+                             :id-fn default-id-fn}))
   ([handler options]
    (fn [request]
      (let [error-fns (:error-fns options)
            server-exception-response-fn (:server-exception-response error-fns)
            pre-hook (:pre-hook options)
            id-fn (:id-fn options)
-           id (id-fn request)]
+           id (or (id-fn request)
+                  default-id-fn)]
        (try
          (handler request)
          (catch clojure.lang.ExceptionInfo e  ; Catch ExceptionInfo
