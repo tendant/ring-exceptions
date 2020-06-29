@@ -32,6 +32,7 @@
                (-> e ex-data :http-status)
                200)
    :body {:errors [{:message (.getMessage e)
+                    :error (-> e ex-data :error)
                     :error-id id}]}})
 
 (defn sql-exception-response
