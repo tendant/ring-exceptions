@@ -4,7 +4,7 @@ A Clojure Ring middle to handle exceptions
 
 ## Usage
 
-```[tendant/ring-exceptions "0.1.6"]```
+```[tendant/ring-exceptions "0.1.7"]```
 
 ## License
 
