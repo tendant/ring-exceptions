@@ -28,12 +28,13 @@
 
 (defn graphql-exception-response
   [e req id]
-  {:status (or (-> e ex-data :status)
-               (-> e ex-data :http-status)
-               200)
-   :body {:errors [{:message (.getMessage e)
-                    :error (-> e ex-data :error)
-                    :error-id id}]}})
+  (let [cause-ex (unwrap-exception e)]
+    {:status (or (-> cause-ex ex-data :status)
+                 (-> cause-ex ex-data :http-status)
+                 200)
+     :body {:errors [{:message (.getMessage cause-ex)
+                      :error (-> cause-ex ex-data :error)
+                      :error-id id}]}}))
 
 (defn sql-exception-response
   [e req id]
