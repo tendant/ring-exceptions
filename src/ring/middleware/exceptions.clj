@@ -50,6 +50,16 @@
   [req]
   (str (java.util.UUID/randomUUID)))
 
+(defn unwrap-exception [ex]
+  (when (and ex
+             (instance? Throwable ex))
+    (let [cause (-> ex ex-data :cause)]
+      (if cause
+        ex
+        (if (.getCause ex)
+          (recur (.getCause ex))
+          ex)))))
+
 (defn wrap-exceptions
   "Wrap unhandled exception"
   ([handler]
@@ -67,7 +77,8 @@
        (try
          (handler request)
          (catch clojure.lang.ExceptionInfo e  ; Catch ExceptionInfo
-           (let [cause (-> e ex-data :cause)
+           (let [cause-ex (unwrap-exception e)
+                 cause (-> cause-ex ex-data :cause)
                  error-fn (get error-fns cause server-exception-response-fn)]
              (log/error e "Caught preprocessed ExceptionInfo:" id)
              (if pre-hook
