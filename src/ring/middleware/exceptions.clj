@@ -1,6 +1,16 @@
 (ns ring.middleware.exceptions
   (:require [clojure.tools.logging :as log]))
 
+(defn unwrap-exception [ex]
+  (when (and ex
+             (instance? Throwable ex))
+    (let [cause (-> ex ex-data :cause)]
+      (if cause
+        ex
+        (if (.getCause ex)
+          (recur (.getCause ex))
+          ex)))))
+
 (defn server-exception-response [e req id]
   (let [uri (:uri req)]
     ;; (println e "uri:" (:uri req) "id:" id)
@@ -50,16 +60,6 @@
 (defn default-id-fn
   [req]
   (str (java.util.UUID/randomUUID)))
-
-(defn unwrap-exception [ex]
-  (when (and ex
-             (instance? Throwable ex))
-    (let [cause (-> ex ex-data :cause)]
-      (if cause
-        ex
-        (if (.getCause ex)
-          (recur (.getCause ex))
-          ex)))))
 
 (defn wrap-exceptions
   "Wrap unhandled exception"
