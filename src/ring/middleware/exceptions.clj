@@ -11,6 +11,13 @@
           (recur (.getCause ex))
           ex)))))
 
+;; https://cljdoc.org/d/metosin/reitit/0.5.11/doc/ring/pluggable-coercion#pretty-printing-spec-errors
+(defn create-error-handler [status]
+  (let [handler (exception/create-coercion-handler status)]
+    (fn [exception request id]
+      (log/info "PROBLEMS:" (-> exception ex-data :problems))
+      (handler exception request))))
+
 (defn server-exception-response [e req id]
   (let [uri (:uri req)]
     ;; (println e "uri:" (:uri req) "id:" id)
