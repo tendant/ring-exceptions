@@ -6,7 +6,7 @@
 (def lib 'org.clojars.wang/ring-exceptions)
 
 ;; if you want a version of MAJOR.MINOR.COMMITS:
-(def version (format "1.0.%s" (b/git-count-revs nil)))
+(def version (format "2.0.%s" (b/git-count-revs nil)))
 
 (defn jar
   [opts]
