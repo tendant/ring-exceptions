@@ -1,0 +1,14 @@
+{
+ :paths ["src" "resources"]
+
+ :deps
+ {org.clojure/clojure {:mvn/version "1.10.1"}
+  org.clojure/tools.logging {:mvn/version "0.5.0"}}
+
+ :aliases
+ {:env/test {:extra-paths ["test"]}
+
+  :build {:deps {io.github.tendant/simple-build {:git/tag "v0.0.28" :git/sha "6e67b0b"}}
+          :ns-default build}
+
+  }}
