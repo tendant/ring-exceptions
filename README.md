@@ -4,7 +4,8 @@ A Clojure Ring middle to handle exceptions
 
 ## Usage
 
-```[tendant/ring-exceptions "0.2.0"]```
+      tendant/ring-exceptions {:git/url "https://github.com/tendant/ring-exceptions.git"
+                               :sha "c3fdbac1af24bb8cd00e68502849c8952563c448"}
 
 ## License
 
